@@ -5,10 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 const Index = () => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({ name: '', phone: '', message: '' });
+  const [showDevDialog, setShowDevDialog] = useState(false);
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const observerOptions = {
@@ -42,6 +46,44 @@ const Index = () => {
     setFormData({ name: '', phone: '', message: '' });
   };
 
+  const handleDevAccess = async () => {
+    if (password !== '5566') {
+      toast({
+        title: "Ошибка",
+        description: "Неверный пароль",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await fetch('https://functions.poehali.dev/ecf911e0-4ddd-4fb7-9723-7d21a1b95248', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (response.ok) {
+        toast({
+          title: "Успешно!",
+          description: "Код отправлен в Telegram"
+        });
+        setShowDevDialog(false);
+        setPassword('');
+      } else {
+        throw new Error('Ошибка отправки');
+      }
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось отправить код",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <header className="fixed top-0 w-full bg-white/90 backdrop-blur-sm shadow-sm z-50">
@@ -58,9 +100,20 @@ const Index = () => {
             <a href="#reviews" className="text-gray-700 hover:text-cyan-500 transition-colors">Отзывы</a>
             <a href="#contact" className="text-gray-700 hover:text-cyan-500 transition-colors">Контакты</a>
           </nav>
-          <a href="tel:+79991234567" className="text-cyan-600 font-semibold text-lg hover:text-cyan-700 transition-colors">
-            +7 (999) 123-45-67
-          </a>
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowDevDialog(true)}
+              className="hidden md:flex items-center gap-2 border-cyan-500 text-cyan-600 hover:bg-cyan-50"
+            >
+              <Icon name="Code" size={16} />
+              Для разработчиков
+            </Button>
+            <a href="tel:+79991234567" className="text-cyan-600 font-semibold text-lg hover:text-cyan-700 transition-colors">
+              +7 (999) 123-45-67
+            </a>
+          </div>
         </div>
       </header>
 
@@ -250,6 +303,33 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
+      <Dialog open={showDevDialog} onOpenChange={setShowDevDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Доступ для разработчиков</DialogTitle>
+            <DialogDescription>
+              Введите пароль для получения исходного кода
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <Input
+              type="password"
+              placeholder="Введите пароль"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleDevAccess()}
+            />
+            <Button 
+              onClick={handleDevAccess} 
+              disabled={isLoading}
+              className="w-full"
+            >
+              {isLoading ? 'Отправка...' : 'Получить код'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
