@@ -42,28 +42,41 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         zip_buffer = io.BytesIO()
         
+        base_paths = ['/function/code', '/var/task', '/app', '.']
+        working_dir = None
+        
+        for base in base_paths:
+            test_path = Path(base) / 'src'
+            if test_path.exists():
+                working_dir = Path(base)
+                break
+        
+        if not working_dir:
+            working_dir = Path(os.getcwd())
+        
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            src_dir = Path('/function/code/src')
+            src_dir = working_dir / 'src'
             
             if src_dir.exists():
                 for file_path in src_dir.rglob('*'):
                     if file_path.is_file():
-                        arcname = str(file_path.relative_to('/function/code'))
+                        arcname = str(file_path.relative_to(working_dir))
                         zip_file.write(file_path, arcname)
             
-            other_files = [
-                '/function/code/package.json',
-                '/function/code/tsconfig.json',
-                '/function/code/tailwind.config.ts',
-                '/function/code/vite.config.ts',
-                '/function/code/index.html',
-                '/function/code/postcss.config.cjs'
+            config_files = [
+                'package.json',
+                'tsconfig.json', 
+                'tailwind.config.ts',
+                'vite.config.ts',
+                'index.html',
+                'postcss.config.cjs',
+                'README.md'
             ]
             
-            for file_path in other_files:
-                if os.path.exists(file_path):
-                    arcname = os.path.basename(file_path)
-                    zip_file.write(file_path, arcname)
+            for filename in config_files:
+                file_path = working_dir / filename
+                if file_path.exists():
+                    zip_file.write(file_path, filename)
         
         zip_buffer.seek(0)
         
