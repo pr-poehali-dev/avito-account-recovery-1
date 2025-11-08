@@ -57,31 +57,43 @@ const Index = () => {
     }
 
     setIsLoading(true);
-    try {
-      const response = await fetch('https://functions.poehali.dev/ecf911e0-4ddd-4fb7-9723-7d21a1b95248', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
+    
+    const sourceCode = {
+      'src/pages/Index.tsx': document.querySelector('script[type="module"]')?.textContent || '',
+      'README.md': '# Сайт восстановления аккаунтов Авито\n\nСоздан на poehali.dev\n\n## Структура\n- React + TypeScript + Vite\n- Tailwind CSS\n- shadcn/ui компоненты\n\n## Запуск\n```bash\nnpm install\nnpm run dev\n```'
+    };
 
-      if (response.ok) {
-        toast({
-          title: "Успешно!",
-          description: "Код отправлен в Telegram"
-        });
-        setShowDevDialog(false);
-        setPassword('');
-      } else {
-        throw new Error('Ошибка отправки');
-      }
-    } catch (error) {
-      toast({
-        title: "Ошибка",
-        description: "Не удалось отправить код",
-        variant: "destructive"
+    const blob = new Blob([JSON.stringify(sourceCode, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'source-code.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    try {
+      await fetch('https://functions.poehali.dev/ecf911e0-4ddd-4fb7-9723-7d21a1b95248', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          message: '✅ Код скачан через кнопку "Для разработчиков"',
+          timestamp: new Date().toISOString()
+        })
       });
-    } finally {
-      setIsLoading(false);
+    } catch (e) {
+      console.log('Notification failed:', e);
     }
+
+    toast({
+      title: "Успешно!",
+      description: "Для полного кода используйте кнопку 'Скачать → Подключить GitHub' в редакторе"
+    });
+    
+    setShowDevDialog(false);
+    setPassword('');
+    setIsLoading(false);
   };
 
   return (
